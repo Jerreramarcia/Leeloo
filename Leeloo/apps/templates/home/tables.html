@@ -1,0 +1,397 @@
+{% extends "layouts/base.html" %}
+
+{% block title %} Tables {% endblock %} 
+
+<!-- Specific Page CSS goes HERE  -->
+{% block stylesheets %}
+{% endblock stylesheets %}
+
+{% block content %}
+<style>
+
+  .insertarNuevaZona{
+    width: 100%;
+    border: none;
+    background-color: transparent;
+  }
+
+</style>
+
+  <div class="container-fluid py-4">
+    <!--Inicio ubicaciones-->
+    <div class="row rowUBicacion">
+      {% for locate in record-%}
+
+      <div class="col-12" name={{locate[0]}} id="locate-{{locate[0]}}">
+        <div class="card my-4">
+          <div class="card-header p-0 position-relative mt-n4 mx-3 z-index-2">
+            <div class="bg-gradient-primary shadow-primary border-radius-lg pt-4 pb-3">
+              <input type="text" id={{locate[0]}} placeholder="Renombrar" value='{{locate[1]}}' style="border: none;  background: none; outline: none; font-weight: 600;" class="text-white text-capitalize ps-3" onchange="rename(this)" >
+            </div>
+          </div>
+          <div class="card-body px-0 pb-2">
+            <div class="table-responsive p-0">
+              <table class="table align-items-center mb-0">
+                <thead>
+                  <tr>
+                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Sensor</th>
+                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">Tipo</th>
+                    <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Estado</th>
+                    <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">IP</th>
+                    <th class="text-secondary opacity-7"></th>
+                  </tr>
+                </thead>
+                <!--Comienzo de información-->
+                <tbody id="table-{{locate[0]}}">
+                <!--Inicio sensores-->
+                {% for sensor in sensors-%}
+                {% if sensor[3] == locate[0]-%}
+                  <tr id="columSensor-{{sensor[0]}}">
+                    <td>
+                      <div class="d-flex px-2 py-1">
+                        <div>
+                          <!--
+                          <img src="/static/assets/img/team-2.jpg" class="avatar avatar-sm me-3 border-radius-lg" alt="user1">
+                          -->
+                          <i class="material-icons opacity-10" style="font-size: 30px">
+                            {% if sensor[2] == 1 -%}
+                              highlight
+                            {%endif -%}
+
+                            {% if sensor[2] == 2 -%}
+                              device_thermostat
+                            {%endif -%}
+
+                            {% if sensor[2] == 3 -%}
+                              leak_add
+                            {%endif -%}
+
+                            {% if sensor[2] == 4 -%}
+                              linked_camera
+                            {%endif -%}
+
+                          </i>
+                        </div>
+                        <div class="d-flex flex-column justify-content-center">
+                          <input type="text" id={{sensor[0]}} data-locate={{locate[0]}} placeholder="Renombrar" value='{{sensor[1]}}' style="border: none;  background: none; outline: none; font-weight: 400;margin-left:-15px" class="text-capitalize ps-3" onchange="renameSensor(this)" >
+                          <p class="text-xs text-secondary mb-0" data-locate={{locate[0]}}>ID: {{sensor[0]}}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <p class="text-xs font-weight-bold mb-0">
+                        <select type="text" data-sensor="{{sensor[0]}}" placeholder="Tipo" style="border: none;  background: none; outline: none; font-weight: 400;margin-left:-15px" class="text-capitalize ps-3" onchange="renameSensorDescripcion(this)">
+                        <option>Tipo</option>
+                        <option value="1" {% if sensor[2] == 1 -%} selected {%endif -%}>Led</option>
+                        <option value="2" {% if sensor[2] == 2 -%} selected {%endif -%} >Temperatura</option>
+                        <option value="3" {% if sensor[2] == 3 -%} selected {%endif -%}>Movimiento</option>
+                        <option value="4" {% if sensor[2] == 4 -%} selected {%endif -%}>Cámara</option>
+                      </select></p>
+                    </td>
+                    <script>
+
+                      function camara(id){
+                        let text;
+                        let url = window.prompt("Introduce la dirección de la cámara","URL");
+                        if (url == null || url == "") {
+                          text = "";
+                        } else {
+                          $.ajax({
+                            url: '/configCam',
+                            type: 'post',
+                            data: {urlCam:url, id:id },
+                            success: function (value) {
+                              console.log(value)
+                              if (value == "ok"){
+                                document.getElementById("status-"+id).classList.remove("bg-gradient-danger");
+                                document.getElementById("status-"+id).className += " bg-gradient-success";
+                                document.getElementById("status-"+id).innerHTML = "Online";
+                              }else{
+                                document.getElementById("status-"+id).classList.remove("bg-gradient-success");
+                                document.getElementById("status-"+id).className += " bg-gradient-danger";
+                                document.getElementById("status-"+id).innerHTML = "Ofline";
+                              }
+                            }
+                          });
+
+                        }
+
+                      }
+
+                      function arduino(id){
+
+                        $.ajax({
+                          url: '/configSensor',
+                          type: 'post',
+                          data: {idSensor:id },
+                          success: function (value) {
+                            console.log(value)
+                            if (value == "ok"){
+                              document.getElementById("status-"+id).classList.remove("bg-gradient-danger");
+                              document.getElementById("status-"+id).className += " bg-gradient-success";
+                              document.getElementById("status-"+id).innerHTML = "Online";
+                            }
+                          }
+                        });
+
+                      }
+                    </script>
+                    <td class="align-middle text-center text-sm">
+                      {% if sensor[2] == 1 -%}
+                      {% if sensor[6] == 1 -%}<button id="status-{{sensor[0]}}" class="badge badge-sm bg-gradient-success" style="border: none; background-color: transparent"> Online </button>{%endif -%}
+                      {% if sensor[6] == 0 -%}<button id="status-{{sensor[0]}}" data-id="{{sensor[0]}}" class="badge badge-sm bg-gradient-danger" onclick="arduino(this.getAttribute('data-id'))" style="border: none; background-color: transparent" > Offline </button>{%endif -%}
+                      {%endif -%}
+                      {% if sensor[2] == 2 -%}
+                      {% if sensor[6] == 1 -%}<button id="status-{{sensor[0]}}" class="badge badge-sm bg-gradient-success" style="border: none; background-color: transparent"> Online </button>{%endif -%}
+                      {% if sensor[6] == 0 -%}<button id="status-{{sensor[0]}}" data-id="{{sensor[0]}}" class="badge badge-sm bg-gradient-danger" onclick="arduino(this.getAttribute('data-id'))" style="border: none; background-color: transparent" > Offline </button>{%endif -%}
+                      {%endif -%}
+                      {% if sensor[2] == 3 -%}
+                      {% if sensor[6] == 1 -%}<button id="status-{{sensor[0]}}" class="badge badge-sm bg-gradient-success" style="border: none; background-color: transparent"> Online </button>{%endif -%}
+                      {% if sensor[6] == 0 -%}<button id="status-{{sensor[0]}}" data-id="{{sensor[0]}}" class="badge badge-sm bg-gradient-danger" onclick="arduino(this.getAttribute('data-id'))" style="border: none; background-color: transparent" > Offline </button>{%endif -%}
+                      {%endif -%}
+                      {% if sensor[2] == 4 -%}
+                      {% if sensor[6] == 1 -%}<button id="status-{{sensor[0]}}" class="badge badge-sm bg-gradient-success" style="border: none; background-color: transparent"> Online </button>{%endif -%}
+                      {% if sensor[6] == 0 -%}<button id="status-{{sensor[0]}}" data-id="{{sensor[0]}}" class="badge badge-sm bg-gradient-danger" onclick="camara(this.getAttribute('data-id'))" style="border: none; background-color: transparent" > Offline </button>{%endif -%}
+                      {%endif -%}
+                      <!--<button id="{{sensor[0]}}" onclick="arduino(this.getAttribute('id'))">Dale click</button>-->
+                    </td>
+                    <td class="align-middle text-center">
+                      <span class="text-secondary text-xs font-weight-bold" data-locate={{locate[0]}}>23/04/18</span>
+                    </td>
+                    <td class="align-middle">
+                      <button style="background-color: transparent; border: none" data-sensor="{{sensor[0]}}" href="javascript:;" class="text-secondary font-weight-bold text-xs" data-toggle="tooltip" data-original-title="Borrar sensor" onclick="deleteSensor(this.getAttribute('data-sensor'))">
+                        Eliminar
+                      </button>
+                    </td>
+                  </tr>
+                {%endif -%}
+                {%endfor -%}
+                  <!--Fila sensores-->
+
+                </tbody>
+                <!--Fin de información-->
+              </table>
+            </div>
+          </div>
+          <div>
+          <button type="button" data-locate={{locate[0]}} class="btn btn-info addButton" style="max-width: 200px;margin-left: 10px;" onclick="sensorLocation(this)">Añadir sensor</button>
+          <button type="button" data-locate={{locate[0]}} class="btn btn-danger addButton" style="max-width: 200px;margin-left: 10px;" onclick="DeleteLocation(this.getAttribute('data-locate'))" lick >Eliminar zona</button>
+          </div>
+
+        </div>
+      </div>
+      {% endfor -%}
+    </div>
+    <!--FIn ubicaciones-->
+    <br/>
+    <!--Inicio añadir zona-->
+    <div class="row">
+      <div class="col-12">
+          <div class="card-header p-0 position-relative mt-n4 mx-3 z-index-2">
+            <button class="insertarNuevaZona" id="ubicacionAdd" onclick="ubicacionAddFunction()">
+            <div class="bg-gradient-primary shadow-primary border-radius-lg pt-4 pb-3">
+              <h6 class="text-white text-capitalize ps-3" style="position: absolute;
+margin-top: -16px;
+">Añadir Zona</h6>
+            </div>
+            </button>
+          </div>
+      </div>
+    </div>
+    <!--Fin añadir zona-->
+
+    <footer class="footer py-4  ">
+      <div class="container-fluid">
+        <div class="row align-items-center justify-content-lg-between">
+          <div class="col-lg-6 mb-lg-0 mb-4">
+            <div class="copyright text-center text-sm text-muted text-lg-start">
+              © <script>
+                document.write(new Date().getFullYear())
+              </script>,
+              made with <i class="fa fa-heart"></i> by
+              <a href="https://www.creative-tim.com" class="font-weight-bold" target="_blank">Creative Tim</a>
+              for a better web.
+            </div>
+          </div>
+          <div class="col-lg-6">
+            <ul class="nav nav-footer justify-content-center justify-content-lg-end">
+              <li class="nav-item">
+                <a href="https://www.creative-tim.com" class="nav-link text-muted" target="_blank">Creative Tim</a>
+              </li>
+              <li class="nav-item">
+                <a href="https://www.creative-tim.com/presentation" class="nav-link text-muted" target="_blank">About Us</a>
+              </li>
+              <li class="nav-item">
+                <a href="https://www.creative-tim.com/blog" class="nav-link text-muted" target="_blank">Blog</a>
+              </li>
+              <li class="nav-item">
+                <a href="https://www.creative-tim.com/license" class="nav-link pe-0 text-muted" target="_blank">License</a>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+{% endblock content %}
+
+<!-- Specific Page JS goes HERE  -->
+{% block javascripts %}
+<script>
+<!--Asignar un sensor a una ubicacion tras dar al boton de añadir-->
+
+  function sensorLocation(location){
+    var idLoc = location.getAttribute("data-locate");
+    var table = document.getElementById("table-"+idLoc);
+
+    $.ajax({
+      url: '/sensorLocation',
+      type: 'post',
+      data: {id:idLoc},
+      success:function(value){
+        console.log(value);
+
+        $("#table-"+idLoc).append("<tr id=\"columSensor-"+value+"\">\n" +
+                "                  <td>\n" +
+                "                    <div class=\"d-flex px-2 py-1\">\n" +
+                "                      <div>\n" +
+                "                        <img src=\"../../static/assets/img/sensor.png\" class=\"avatar avatar-sm me-3 border-radius-lg\" alt=\"user1\">\n" +
+                "                      </div>\n" +
+                "                      <div class=\"d-flex flex-column justify-content-center\">\n" +
+                "                      <input type=\"text\" data-type=\"nombre\" id=\""+ value +"\" data-locate=\""+ idLoc +"\" placeholder=\"Nombre\" style=\"border: none;  background: none; outline: none; font-weight: 400;margin-left:-15px\" class=\"text-capitalize ps-3\" onchange=\"renameSensor(this)\">\n" +
+                "                        <p class=\"text-xs text-secondary mb-0\">ID:" +value+"</p>\n" +
+                "                      </div>\n" +
+                "                    </div>\n" +
+                "                  </td>\n" +
+                "                  <td>\n" +<!--Tipo-->
+                "                    <p class=\"text-xs font-weight-bold mb-0\"><select id=\"select-"+value+"\" type=\"text\" data-locate=\""+ value +"\" placeholder=\"Tipo\" style=\"border: none;  background: none; outline: none; font-weight: 400;margin-left:-15px\" class=\"text-capitalize ps-3\" onchange=\"renameSensorDescripcion(this)\"> <option value=\"value1\">Value 1</option></select></p>\n" +
+                "                  </td>\n" +
+                "                  <td class=\"align-middle text-center text-sm\">\n" +
+                "                    <span class=\"badge badge-sm bg-gradient-error\">Offline</span>\n" +
+                "                  </td>\n" +
+                "                  <td class=\"align-middle text-center\">\n" +
+                "                    <span class=\"text-secondary text-xs font-weight-bold\">23/04/18</span>\n" +
+                "                  </td>\n" +
+                "                  <td class=\"align-middle\">\n" +
+                "                    <button data-sensor=\""+value+"\" style='border: none;background-color: transparent' href=\"javascript:;\" class=\"text-secondary font-weight-bold text-xs\" data-toggle=\"tooltip\" data-original-title=\"Borrar sensor\" onclick='deleteSensor(this.getAttribute(\"data-sensor\"))'>\n" +
+                "                      Eliminar\n" +
+                "                    </button>\n" +
+                "                  </td>\n" +
+                "                </tr>\n");
+      }
+    });
+
+  }
+  <!--ELiminar sensor-->
+  function deleteSensor(sensor){
+    tableSensor = "#columSensor-"+sensor;
+    console.log(tableSensor);
+    $(tableSensor).fadeOut();
+    $.ajax({
+      url: '/deleteSensor',
+      type: 'post',
+      data: {id:sensor},
+      success:function(value){
+
+      }
+    });
+
+}  function DeleteLocation(locate){
+    $("#locate-"+locate).fadeOut();
+  $.ajax({
+    url: '/deleteLocate',
+    type: 'post',
+    data: {id:locate},
+    success:function(value){
+      console.log(value)
+    }
+  });
+
+
+
+}
+  <!--Renombrar una ubicacion-->
+  function rename(location){
+    var idLoc = location.getAttribute("id");
+    var name = location.value;
+    $.ajax({
+      url: '/renameLocation',
+      type: 'post',
+      data: {id:idLoc, rename:name},
+      success:function(value){
+        console.log(value)
+      }
+    });
+  }
+<!--Renombrar sensor-->
+  function renameSensor(sensor){
+    var idSens = sensor.getAttribute("id");
+    var name = sensor.value;
+    $.ajax({
+      url: '/renameSensor',
+      type: 'post',
+      data: {id:idSens, rename:name},
+      success:function(value){
+        console.log(value)
+      }
+    });
+  }
+  <!--Renombrar descripcion de sensor-->
+  function renameSensorDescripcion(sensor){
+    var idSens = sensor.getAttribute("data-sensor");
+    var name = sensor.value;
+    $.ajax({
+      url: '/renameSensorType',
+      type: 'post',
+      data: {id:idSens, rename:name},
+      success:function(value){
+        console.log(value)
+      }
+    });
+  }
+
+  <!--Añadir ubicacion-->
+  function ubicacionAddFunction(){
+    $.ajax({
+      url: '/ubicacionAdd',
+      type: 'post',
+      success:function(value){
+        var idLoc = value;
+        $(".rowUBicacion").append("<div class=\"col-12\" id=\"locate-"+value+"\" name=\""+ value +"\">\n" +
+                "        <div class=\"card my-4\">\n" +
+                "          <div class=\"card-header p-0 position-relative mt-n4 mx-3 z-index-2\">\n" +
+                "            <div class=\"bg-gradient-primary shadow-primary border-radius-lg pt-4 pb-3\">\n" +
+                "             <input placeholder='Nombre ubicación' id=\""+ value +"\" type=\"text\" onchange=\"rename(this)\" style=\"border: none; outline: none;  background: none;  font-weight: 600;\" class=\"text-white text-capitalize ps-3\" >\n" +
+                "            </div>\n" +
+                "          </div>\n" +
+                "          <div class=\"card-body px-0 pb-2\">\n" +
+                "            <div class=\"table-responsive p-0\">\n" +
+                "              <table class=\"table align-items-center mb-0\">\n" +
+                "                <thead>\n" +
+                "                <tr>\n" +
+                "                  <th class=\"text-uppercase text-secondary text-xxs font-weight-bolder opacity-7\">Sensor</th>\n" +
+                "                  <th class=\"text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2\">Tipo</th>\n" +
+                "                  <th class=\"text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7\">Estado</th>\n" +
+                "                  <th class=\"text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7\">IP</th>\n" +
+                "                  <th class=\"text-secondary opacity-7\"></th>\n" +
+                "                </tr>\n" +
+                "                </thead>\n" +
+                "                <!--Comienzo de información-->\n" +
+                "                <tbody id=\"table-"+ value+"\">\n" +
+                "                </tbody>\n" +
+                "                <!--Fin de información-->\n" +
+                "              </table>\n" +
+                "            </div>\n" +
+                "          </div>\n" +
+                "          <div>\n" +
+                "          <button type=\"button\" data-locate=\"" + value +"\" class=\"btn btn-info addButton\" style=\"max-width: 200px;margin-left: 10px;\" onclick=\"sensorLocation(this)\">Añadir sensor</button>\n"+
+                "          <button type=\"button\" data-locate=\"" + value +"\" class=\"btn btn-danger addButton\" style=\"max-width: 200px;margin-left: 10px;\" onclick=\"DeleteLocation(this.getAttribute('data-locate'))\">Eliminar zona</button>\n"+
+                "        </div>\n" +
+                "        </div>\n" +
+                "      </div>\n");
+      }
+    });
+  }
+</script>
+{% endblock javascripts %}
